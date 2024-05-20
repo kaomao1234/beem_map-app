@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="flutter_maps"
         android:name="${applicationName}"
@@ -9,6 +11,7 @@
             <!-- Add your Google Maps API Key here -->
             <meta-data android:name="com.google.android.geo.API_KEY"
                     android:value="AIzaSyDH0WlfvjIgXyYNJ8rtM1-x1R5G9DxaPOA"/>
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
