@@ -60,9 +60,6 @@ class PropsLatLng {
 }
 
 class _MapViewState extends State<MapView> {
-  double _originLatitude = 16.7478645, _originLongitude = 100.1934934;
-  double _destLatitude = 16.7426356, _destLongitude = 100.1946241;
-
   Map<MarkerId, Marker> markers = {};
   PropsLatLng propsLatLng = PropsLatLng(LatLng(0, 0), LatLng(0, 0));
   ValueNotifier<Map<PolylineId, Polyline>> polylines = ValueNotifier({});
@@ -85,6 +82,15 @@ class _MapViewState extends State<MapView> {
   @override
   void initState() {
     super.initState();
+  }
+
+  void _updateMarkersAndPolylines() {
+    propsLatLng.setDest(propsLatLng.dest.latitude + 0.0001,
+        propsLatLng.dest.longitude + 0.0001);
+    _addMarker(propsLatLng.origin, "origin", BitmapDescriptor.defaultMarker);
+    _addMarker(propsLatLng.dest, "destination",
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue));
+    _getPolyline(propsLatLng.toPointOrigin(), propsLatLng.toPointDest());
   }
 
   _addMarker(LatLng position, String id, BitmapDescriptor descriptor) {
@@ -120,7 +126,8 @@ class _MapViewState extends State<MapView> {
       result.points.forEach((PointLatLng point) {
         polylineCoordinates.add(LatLng(point.latitude, point.longitude));
       });
-    } else {}
+    }
+    polylines.notifyListeners();
     _addPolyLine();
   }
 
@@ -131,30 +138,22 @@ class _MapViewState extends State<MapView> {
       body: FutureBuilder(
         future: fetchCurrentLocation(),
         builder: (context, snapshot) {
-          Timer.periodic(Duration(seconds: 10), (timer) {
-            markers = {};
-            polylines.value.clear();
-            propsLatLng.setDest(
-                propsLatLng.dest.latitude + 0.0001, propsLatLng.dest.longitude);
-          });
+        
           if (snapshot.hasData) {
+            log(snapshot.data.toString());
             propsLatLng.setOrigin(
                 snapshot.data!.latitude, snapshot.data!.longitude);
-            propsLatLng.setDest(
-                snapshot.data!.latitude + 0.002, snapshot.data!.longitude);
-
+            propsLatLng.setDest(snapshot.data!.latitude + 0.001,
+                snapshot.data!.longitude + 0.001);
+              Timer.periodic(Duration(seconds: 3), (timer) {
+            markers.clear();
+            polylineCoordinates.clear();
+            polylines.value.clear();
+            _updateMarkersAndPolylines();
+          });
             return ValueListenableBuilder(
               valueListenable: polylines,
               builder: (context, value, child) {
-                _addMarker(propsLatLng.origin, "origin",
-                    BitmapDescriptor.defaultMarker);
-                _addMarker(
-                    propsLatLng.dest,
-                    "destination",
-                    BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueBlue));
-                _getPolyline(
-                    propsLatLng.toPointOrigin(), propsLatLng.toPointDest());
                 return GoogleMap(
                   initialCameraPosition: CameraPosition(
                     target: propsLatLng.origin,
@@ -166,7 +165,7 @@ class _MapViewState extends State<MapView> {
                   scrollGesturesEnabled: true,
                   zoomGesturesEnabled: true,
                   markers: Set<Marker>.of(markers.values),
-                  polylines: Set<Polyline>.of(polylines.value.values),
+                  polylines: Set<Polyline>.of(value.values),
                   // mapType: MapType.terrain,
                   onMapCreated: (GoogleMapController controller) {
                     _controller.complete(controller);
